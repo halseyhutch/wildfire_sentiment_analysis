@@ -5,7 +5,7 @@ library(tidyverse)
 # https://developer.twitter.com/en/docs/tutorials/getting-historical-tweets-using-the-full-archive-search-endpoint
 # https://developer.twitter.com/en/docs/twitter-api/tweets/search/integrate/build-a-query
 # https://developer.twitter.com/en/docs/twitter-api/data-dictionary/introduction
-bearer_token = readLines('~/msp/twitter/bearer_token.txt')
+bearer_token = readLines('~/msp/wildfire_sentiment_analysis/bearer_token.txt')
 
 headers = c(
   `Authorization` = sprintf('Bearer %s', bearer_token)
@@ -17,21 +17,25 @@ n <- 50000
 # place_country:US
 # search in CA [note: this bounding box is too big]
 # bounding_box:[-124.48200 32.52883 -114.13121 42.00952]
+# dixie fire: August 2021
+# bay area fire: 8/15/20 - 9/15/20
+# camp fire: November 2018
+# tubbs fire: October 2017
 params = list(
-  `query` = 'dixie fire -is:retweet lang:en',
-  `start_time` = '2021-08-01T00:00:00.00Z',
-  `end_time` = '2021-09-01T00:00:00.00Z',
+  `query` = '#CampFire -is:retweet lang:en place_country:US',
+  `start_time` = '2018-11-01T00:00:00.00Z',
+  `end_time` = '2018-12-01T00:00:00.00Z',
   `max_results` = '500',
   `tweet.fields` = 'created_at,lang,public_metrics',
-  `expansions` = 'author_id',
-  `user.fields` = 'description,location,public_metrics'
-  # `expansions` = 'geo.place_id',
-  # `place.fields` = 'geo,place_type'
+  `expansions` = 'geo.place_id',
+  # `user.fields` = 'description,location,public_metrics',
+  `place.fields` = 'geo,place_type'
 )
 
 tweets <- data.frame(
   text = character(0),
-  author_id = character(0),
+  # author_id = character(0),
+  place_id = character(0),
   created_at = as.Date(character(0)),
   retweet_count = numeric(0),
   reply_count = numeric(0),
@@ -48,6 +52,13 @@ users <- data.frame(
   following_count = numeric(0),
   tweet_count = numeric(0),
   listed_count = numeric(0)
+)
+
+places <- data.frame(
+  id = character(0),
+  full_name = character(0),
+  place_type = character(0),
+  bbox = character(0)
 )
 
 while (nrow(tweets) < n) {
@@ -70,27 +81,40 @@ while (nrow(tweets) < n) {
   
   tweet_df <- cbind(
     result$data$text,
-    result$data$author_id,
+    # result$data$author_id,
+    result$data$geo$place_id,
     result$data$created_at,
     result$data$public_metrics
   )
   
-  colnames(tweet_df)[1:3] <- c('text', 'author_id', 'created_at')
+  colnames(tweet_df)[1:3] <- c('text', 'place_id', 'created_at')
   
   tweets <- rbind(tweets, tweet_df)
   
   
-  user_df <- cbind(
-    result$includes$users$id,
-    result$includes$users$username,
-    result$includes$users$name,
-    result$includes$users$description,
-    result$includes$users$public_metrics
-  )
+  # user_df <- cbind(
+  #   result$includes$users$id,
+  #   result$includes$users$username,
+  #   result$includes$users$name,
+  #   result$includes$users$description,
+  #   result$includes$users$public_metrics
+  # )
+  # 
+  # colnames(user_df)[1:4] <- c('id', 'username', 'name', 'description')
+  # 
+  # users <- rbind(users, user_df)
   
-  colnames(user_df)[1:4] <- c('id', 'username', 'name', 'description')
   
-  users <- rbind(users, user_df)
+  place_df <- as.data.frame(cbind(
+    result$includes$places$id,
+    result$includes$places$full_name,
+    result$includes$places$place_type,
+    unlist(lapply(result$includes$places$geo$bbox, function(x) paste(x, collapse = " ")))
+  ))
+  
+  colnames(place_df) <- c('id', 'full_name', 'place_type', 'bbox')
+  
+  places <- rbind(places, place_df)
   
   
   nt <- result$meta$next_token
@@ -99,8 +123,8 @@ while (nrow(tweets) < n) {
   
 }
 
-saveRDS(tweets, 'dixie_tweets.RDS')
-saveRDS(users, 'dixie_users.RDS')
+saveRDS(tweets, 'tubbs_tweets.RDS')
+saveRDS(users, 'tubbs_users.RDS')
 
-t3 <- readRDS('dixie_tweets.RDS')
+# t3 <- readRDS('dixie_tweets.RDS')
 
