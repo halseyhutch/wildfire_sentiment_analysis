@@ -82,8 +82,7 @@ main %>%
   labs(title = "Wildfire Sentiment Change Over Time",
        x = "",
        y = "Percentage",
-       fill = "Sentiment") +
-  theme(legend.position = "bottom")
+       fill = "Sentiment")
 ```
 
 **Discussion**
