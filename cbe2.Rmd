@@ -1,0 +1,37 @@
+---
+title: 'Coffee Break Experiment #2'
+author: "Charles Hutchinson, Sam Kalman"
+date: "Due 2022-11-20"
+output: pdf_document
+---
+
+#### Introduction
+
+One of North America's most noticeable symptoms of climate change has been a dramatic increase in the volume and intensity of wildfires, particularly in the western regions. August and September were previously defined by clear skies and fair weather, but fire and smoke have become a recurrent factor in this area. According to the National Interagency Fire Center (NIFC), more acreage burned nationally in each of the last seven years than any single year but one in the first ten years this data was collected (1983-1993, ex. 1988).^[See https://www.nifc.gov/fire-information/statistics/wildfires.] We sought to analyze if and how public sentiment has shifted over time with respect to these cataclysmic events, with the hopes of gaining some insight into public perceptions of climate change.
+
+#### Data
+
+We analyzed public sentiment towards wildfires by pulling publicly available tweets through Twitter's API. We chose to pull tweets made around the time of four of the largest, most recent wildfires in California. These events were the 2021 Dixie Fire, the 2020 Bay Area Fires, the 2018 Camp Fire, and the 2017 Tubbs Fire.
+
+It was difficult to find relevant data. Tweets that were well-tagged (e.g., including #DixieFire for the Dixie Fire) tended to be associated with news organizations, which were overwhelmingly neutral and rarely "organic" reactions. However, loosening the search parameters inevitably lowered the data quality (e.g., searching for "smoke" mostly returned tweets referencing marijuana usage). It was especially challenging to develop searches with consistent methodology across separate wildfires, while still getting useful data.
+
+We found our best results using the following approach:
+
+* Use the commonly accepted fire name and "fire" as search terms. For example, the search terms for the 2021 Dixie Fire would simply be "dixie fire".
+* Limit the search results to English. Creating sentiment dictionaries in other languages was out of scope for this project.
+* Remove retweets.
+* Limit the tweets to a month time frame. Some fires lasted longer than this, so we picked the interval in which the smoke was most impactful.
+
+The size of each fire's corpus was unfortunately still far from uniform, but we found this to be a reasonable compromise among a set of unappealing options.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+data.frame(
+  Fire = c("Tubbs Fire", "Camp Fire", "Bay Area Fires", "Dixie Fire"),
+  Tweets = c(3530, 50469, 4680, 26139)
+) %>%
+  kableExtra::kbl(caption = "Relevant Tweets per Recent Wildfire.", booktabs = T, linesep = "", digits = 2) %>%
+  kableExtra::kable_styling(latex_options = "HOLD_position") %>%
+  kableExtra::kable_classic()
+```

@@ -5,7 +5,7 @@ library(tidyverse)
 # https://developer.twitter.com/en/docs/tutorials/getting-historical-tweets-using-the-full-archive-search-endpoint
 # https://developer.twitter.com/en/docs/twitter-api/tweets/search/integrate/build-a-query
 # https://developer.twitter.com/en/docs/twitter-api/data-dictionary/introduction
-bearer_token = readLines('~/msp/wildfire_sentiment_analysis/bearer_token.txt')
+bearer_token = readLines('~/text analysis/wildfire_sentiment_analysis/bearer_token.txt')
 
 headers = c(
   `Authorization` = sprintf('Bearer %s', bearer_token)
