@@ -47,11 +47,11 @@ main <- main %>%
 
 **Methods**
 
-To better understand how perception of climate change has changed over time, a sentiment analysis algorithm from the syuzhet^[See https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6] package was applied to the 84,818 tweets across the 4 major fires of interest. The syuzhet package returns sentiment scores in the degree of positively/negativity using a sentiment dictionary developed in the Nebraska Literacy Labs. All links and web addresses were removed from the tweets as well as twitter handles, indicating that the tweet was mentioning or replying to another user. Each tweet was given a sentiment score. Scores above 0 were considered positive, below 0 were negative, and equal to 0 were considered a neutral tweet. Any tweets from twitter accounts with the words "news" or "meteorology" in their biographies were filtered out. We found that most news organization tweets contained neutral, non-opinionated information about the respective wildfire. To control for twitter bots adding unnecessary noise to the data, the users needed to have at least 1 follower and the tweet must be interacted with (like/retweet/comment) at least once.
+To better understand how perception of climate change has changed over time, we used a sentiment analysis algorithm from the syuzhet^[See https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6] package on our Twitter data. The syuzhet package returns sentiment scores on a spectrum of positively/negativity using a sentiment dictionary developed in the Nebraska Literacy Labs. We removed all links, web addresses, and twitter handles from the tweets. Sentiment scores above 0 were labeled positive, below 0 labeled negative, and equal to 0 labeled as neutral. Any tweets from Twitter accounts with the words "news" or "meteorology" in their biographies were filtered out. We found that most tweets from news organization contained neutral, non-opinionated information, which wasn't useful for our research question. In an attempt to filter out bots adding unnecessary noise to the data, we only used tweets from users with at least one follower, and the tweet itself needed at least one external interaction (a like/retweet/comment).
 
 **Results**
 
-In Figure 1 below, the sentiment classification breakdown is plotted for each of the 4 wildfires. To account for the tweet volume difference between the four fires, percentages of sentiment type is calculated based on the total number of tweets pertaining to a respective fire. The fire are in chronological order, beginning with Tubbs Fire and ending with the Dixie Fire.   
+In Figure 1, the sentiment classification breakdown is plotted for each of the four wildfires. To account for the tweet volume difference between the four fires, percentages of sentiment type are calculated based on the total number of tweets pertaining to each fire. The fires are in chronological order, beginning with Tubbs Fire and ending with the Dixie Fire. The error bars reflect a 95% confidence interval for each proportion.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3, fig.width=6,fig.cap="Shift in Wildfire Sentiment Over Time."}
 main %>%
@@ -65,18 +65,33 @@ main %>%
   group_by(fire) %>%
   summarize(Positive = length(syuzScore[syuzScore == "Positive"]) / n(),
             Negative = length(syuzScore[syuzScore == "Negative"]) / n(),
-            Neutral = length(syuzScore[syuzScore == "Neutral"]) / n()) %>%
+            Neutral = length(syuzScore[syuzScore == "Neutral"]) / n(),
+            Total = n()) %>%
   gather(sentiment, percentage, Positive:Neutral) %>%
+  mutate(
+    se = sqrt(percentage * (1 - percentage) / Total),
+    lower = percentage - 2 * se,
+    upper = percentage + 2 * se
+  ) %>%
   ggplot(aes(x = fire, y = percentage, fill = sentiment)) +
-  geom_bar(stat = "identity", position = "dodge") + 
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = lower, ymax = upper), position = "dodge", color = "black") +
   scale_fill_manual(values = c("red2", "blue", "darkgreen")) + 
+  scale_y_continuous(labels=scales::percent) +
   theme_bw() +
   labs(title = "Wildfire Sentiment Change Over Time",
        x = "",
        y = "Percentage",
-       fill = "Sentiment")
+       fill = "Sentiment") +
+  theme(legend.position = "bottom")
 ```
 
-Even though the tweet volume is not consistent throughout time, figure 1 gives us preliminary evidence that there may a shift in tweet sentiment as we observe more and more of these natural disasters. Beginning with Camp Fire, the amount of negative tweets has been steadily increasing for each wildfire.
-
 **Discussion**
+
+Even though the tweet volume is not consistent throughout time, Figure 1 gives us preliminary evidence that there may be a shift in tweet sentiment as we observe more and more of these natural disasters. Beginning with Camp Fire, the amount of negative tweets significantly increased for each wildfire.
+
+As previously mentioned, data quality was the limiting factor on this analysis. It was difficult to find a set of relevant tweets using a consistent methodology for each fire. Finding a balance between organic and relevant reactions ended up requiring more judgment than we would have liked.
+
+It was surprising that we could not find more tweets for the Bay Area and Tubbs fires, given their proximity to major urban centers. We originally suspected that the Camp Fire tweet set contained many false positives, but it appears that fire generated more engagement than expected due to the almost total devastation (and subsequent press coverage) of the towns of Paradise, Concow, Magalia, and Butte Creek Canyon. The Dixie Fire was similarly destructive. As the largest ever single wildfire in the state's history, part of its impact included popular Lassen National Park, which clearly increased engagement on Twitter.
+
+Our next area of research will be studying location-based elements of the wildfire tweets. Data quality issues were compounded in our initial attempts to download this data, since only a subset of Twitter users enable this functionality. However, knowing the location of each tweet will allow us to better understand if these changes in sentiment were localized, or on a national level.
