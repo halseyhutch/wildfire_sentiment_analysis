@@ -1,3 +1,7 @@
 
 *.txt
 *.RDS
+roberta_twitter_sentiment/
+*.csv
+*.png
+*.jpg

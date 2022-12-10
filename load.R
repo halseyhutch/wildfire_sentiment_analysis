@@ -5,13 +5,13 @@ library(tidyverse)
 # https://developer.twitter.com/en/docs/tutorials/getting-historical-tweets-using-the-full-archive-search-endpoint
 # https://developer.twitter.com/en/docs/twitter-api/tweets/search/integrate/build-a-query
 # https://developer.twitter.com/en/docs/twitter-api/data-dictionary/introduction
-bearer_token = readLines('~/text analysis/wildfire_sentiment_analysis/bearer_token.txt')
+bearer_token = readLines('~/msp/wildfire_sentiment_analysis/bearer_token.txt')
 
 headers = c(
   `Authorization` = sprintf('Bearer %s', bearer_token)
 )
 
-n <- 50000
+n <- 100000
 
 # search in the US 
 # place_country:US
@@ -22,9 +22,9 @@ n <- 50000
 # camp fire: November 2018
 # tubbs fire: October 2017
 params = list(
-  `query` = '#CampFire -is:retweet lang:en place_country:US',
-  `start_time` = '2018-11-01T00:00:00.00Z',
-  `end_time` = '2018-12-01T00:00:00.00Z',
+  `query` = 'fire -is:retweet lang:en place_country:US',
+  `start_time` = '2020-08-15T00:00:00.00Z',
+  `end_time` = '2020-09-15T00:00:00.00Z',
   `max_results` = '500',
   `tweet.fields` = 'created_at,lang,public_metrics',
   `expansions` = 'geo.place_id',
@@ -123,8 +123,8 @@ while (nrow(tweets) < n) {
   
 }
 
-saveRDS(tweets, 'tubbs_tweets.RDS')
-saveRDS(users, 'tubbs_users.RDS')
+saveRDS(tweets, 'bay_area_fire_tweets.RDS')
+saveRDS(places, 'bay_area_fire_places.RDS')
 
 # t3 <- readRDS('dixie_tweets.RDS')
 
