@@ -1,0 +1,173 @@
+---
+title: "668 Final Part 1"
+author: "Sam Kalman and Charles Hutchinson"
+date: "2022-12-11"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F, include = F}
+# Load Package
+library(syuzhet)
+library(tidyverse)
+```
+
+**Data**
+
+We analyzed sentiment towards wildfires by pulling publicly available tweets through Twitter's API. We chose to pull tweets made around the time of four of the largest, most recent wildfires in California. These events were the 2021 Dixie Fire, the 2020 Bay Area Fires, the 2018 Camp Fire, and the 2017 Tubbs Fire.
+
+It was difficult to find relevant data. Tweets that were well-tagged (e.g., including #DixieFire for the Dixie Fire) tended to be associated with news organizations, which were overwhelmingly neutral and rarely "organic" reactions. However, loosening the search parameters inevitably lowered the data quality (e.g., searching for "smoke" mostly returned tweets referencing marijuana usage). It was especially challenging to develop searches with consistent methodology across separate wildfires, while still getting useful data.
+
+We found our best results using the following approach:
+
+* Use the commonly accepted fire name and "fire" as search terms. For example, the search terms for the 2021 Dixie Fire would simply be "dixie fire".
+* Limit the search results to English. Creating sentiment dictionaries in other languages was out of scope for this project.
+* Remove retweets.
+* Limit the tweets to a month time frame. Some fires lasted longer than this, so we picked the interval in which the smoke was most impactful.
+
+The size of each fire's corpus was unfortunately still far from uniform, possibly due to unequal media coverage, but we found this to be a reasonable compromise among a set of unappealing options. We found both Camp Fire and Dixie Fire received far more media coverage, given our listed constraints, compared to Tubbs Fire and the Bay Area Fires. Below in Table 1 is the breakdown of tweets per fire.
+
+```{r, echo = F, warning = F, message = F}
+data.frame(
+  Fire = c("Tubbs Fire", "Camp Fire", "Bay Area Fires", "Dixie Fire"),
+  Tweets = c(3530, 50469, 4680, 26139)
+) %>%
+  kableExtra::kbl(caption = "Relevant Tweets per Recent Wildfire.", booktabs = T, linesep = "", digits = 2) %>%
+  kableExtra::kable_styling(latex_options = "HOLD_position") %>%
+  kableExtra::kable_classic()
+```
+
+Each tweet also included associated Meta Data. The Meta Data was broken into tweet level information (Likes, Retweet, Quote Tweets, Date) and user level information (Followers, Following, Biography, Twitter Name).
+
+**Methods**
+
+**Wildfire Sentiment Through Time**
+
+In order to track the changes of wildfire Sentiment through time, we used two different sentiment analysis algorithms to get a sentiment classification for each tweet. Since sentiment analysis is an unsupervised modeling technique, meaning there isn't a correct sentiment to check each modeling prediction against, we decided on using two different algorithms and comparing the results across models. The first algorithm we used was from the syuzhet package^[https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6] in R. The syuzhet package returns sentiment scores on a spectrum of positively/negativity using a sentiment dictionary developed in the Nebraska Literacy Labs. Any sentiment score that was greater than 0 was deem "Positive", less than 0, "Negative, and exactly equal to 0 was considered, "Neutral". However, a draw back of the syuzhet is that it is designed to highlight latent structure of narrative. This is accomplished by, "revealing emotional shifts that serve as proxies for narrative movement between conflict and conflict resolution". The syuzhet package wasn't designed or trained on short, declarative statements such as tweets. 
+
+To overcome this issue, we also decided to model sentiment through the cutting edge roBERTa-base model^[https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest]. This model was trained on roughly 124 million tweets from January 2018 to December 2021 and used the TweetEval benchmark for fine tuning the sentiment analysis. Sentiment Analysis was given in three categories for the roBERTa-base model: degree of positivity, degree of negativity and degree in which the tweet was neutral. We used the largest score out of the three categories as the binary classification for the sentiment of a tweet. 
+
+We found that most tweets from news organization contained neutral, non-opinionated information, which wasn’t useful for our research question. Therefore any tweet that came from a user with the word "meterology" in their bio was not considered. Also, in an attempt to filter out bots adding unnecessary noise to the data, we only used tweets from users with at least one follower, and the tweet itself needed at least one external interaction (a like/retweet/comment). This was done consistently before running both of the discussed sentiment algorithms.
+
+To track to sentiment shift through time, we chronologically ordered the fires (Tubbs Fire, Camp Fire, Bay Area Fire, Dixie Fire) and calculated the proportion of each sentiment for each fire. The fires represents a point in time and proportion was used because of the unequal distribution of tweets within each fire. 
+
+\pagebreak
+
+**Results**
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+main <- read_csv("MainSentiment.csv") 
+```
+
+**Wildfire Sentiment Through Time**
+
+In Figure 1, the sentiment classification breakdown is plotted for each of the four wildfires. To account for the tweet volume difference between the four fires, percentages of sentiment type are calculated based on the total number of tweets pertaining to each fire. The fires are in chronological order, beginning with Tubbs Fire and ending with the Dixie Fire. The error bars reflect a 95% confidence interval for each proportion.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3, fig.width=6,fig.cap="Shift in Wildfire Sentiment Over Time."}
+
+main <- read_csv("MainSentiment.csv") 
+
+main %>%
+  filter(followers_count > 0 & 
+           following_count > 0 & 
+           like_count > 0) %>%
+  filter(!stringr::str_detect(description,'meteorology')) %>%
+  mutate(fire = fct_relevel(fire, c("Tubbs Fire", 
+                      "Camp Fire", 
+                      "Bay Area Fire", 
+                      "Dixie Fire"))) %>%
+  group_by(fire) %>%
+  summarize(Positive = length(syuzhet_sent[syuzhet_sent == "positive"]) / n(),
+            Negative = length(syuzhet_sent[syuzhet_sent == "negative"]) / n(),
+            Neutral = length(syuzhet_sent[syuzhet_sent == "neutral"]) / n(),
+            Total = n()) %>%
+  gather(sentiment, percentage, Positive:Neutral) %>%
+  mutate(
+    se = sqrt(percentage * (1 - percentage) / Total),
+    lower = percentage - 2 * se,
+    upper = percentage + 2 * se) %>%
+  ggplot(aes(x = fire, y = percentage, fill = sentiment)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.3) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper)
+                , position = "dodge"
+                , color = "black") +
+  scale_fill_manual(values = c("red2", "blue", "darkgreen")) +
+  labs(title = "Syuzhet Sentiment Analysis",
+       x = "Fire",
+       y = "Proportion of Tweets",
+       fill = "Sentiment") +
+  theme_bw()
+```
+
+There are not many neutral tweets. The majority of tweets are classified as negative and the proportion of negativity appeats to be steadily increasing through time. 
+
+Figure 2 is the same graphic but with sentiment classifications from roBERTa-base model.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3, fig.width=6,fig.cap="Shift in Wildfire Sentiment Over Time."}
+main %>%
+  filter(followers_count > 0 & 
+           following_count > 0 & 
+           like_count > 0) %>%
+  filter(!stringr::str_detect(description,'meteorology')) %>%
+  mutate(fire = fct_relevel(fire, c("Tubbs Fire", 
+                      "Camp Fire", 
+                      "Bay Area Fire", 
+                      "Dixie Fire"))) %>%
+  group_by(fire) %>%
+  summarize(Positive = length(bert_sent[bert_sent == "positive"]) / n(),
+            Negative = length(bert_sent[bert_sent == "negative"]) / n(),
+            Neutral = length(bert_sent[bert_sent == "neutral"]) / n(),
+            Total = n()) %>%
+  gather(sentiment, percentage, Positive:Neutral) %>%
+  mutate(
+    se = sqrt(percentage * (1 - percentage) / Total),
+    lower = percentage - 2 * se,
+    upper = percentage + 2 * se) %>%
+  ggplot(aes(x = fire, y = percentage, fill = sentiment)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.3) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper)
+                , position = "dodge"
+                , color = "black") +
+  scale_fill_manual(values = c("red2", "blue", "darkgreen")) +
+  labs(title = "BERT Sentiment Analysis",
+       x = "Fire",
+       y = "Proportion of Tweets",
+       fill = "Sentiment") +
+  theme_bw()
+
+```
+
+The roBERTa-base model classifies a larger proportion of the tweets as neutral. It was difficult for us to remove all news related tweets. roBERTa-base model classified a lot of these as neutral when the syuzhet package would incorrectly assig the tweet as slightly positive or slightly negative. However, roBERTa-base model classified less negativity for the Tubbs fire than the syuzhet package and we see a more consistent increase in negativity, plateauing at the Bay Area Fire and Dixie Fire. It was difficult for us to remove all news related tweets, roBERTa-base model
+
+Let's examine differences in specific tweet classifation between the syuzhet and roBERTa-base model. Specifically, for the Tubbs fire where we saw less negativity classified by the roBERTa-base model. It was difficult for us to remove all news related tweets. roBERTa-base model classified a lot of these as neutral when the syuzhet package would incorrectly assig the tweet as slightly positive or slightly negative.
+
+**Examples of neutral for roBERTa-base and negative for syuzhet**
+
+* Where Did the Tubbs Fire Begin? Investigators Scour the Ashes https://t.co/9z2QjBXi77
+
+* The cause of the massive Tubbs fire is still unknown -- but officials think they may be zeroing in: https://t.co/0k9w4nFgpE.
+
+These are examples of truly neutral tweets from news organizations. However, the syuzhet package tends to not assign many neutral tweets. These were incorrectly classified as negative by syuzhet, possibly due to words like "scour" or "unknown", but correctly seen as neutral from roBERTa-base.
+
+**Examples of negative for roBERTa-base and positive for syuzhet**
+
+* The personal treasures former Raiders great Cliff Branch lost in Santa Rosa fires--a truly sad tale by Bob Padecky. https://t.co/gIT0AulURq
+
+* My parents lost everything in the Tubbs Fire yesterday. Anything will help. Please share as much as you can. Thank you so much. #tubbsfire https://t.co/xFAexYshSL
+
+* Many Sonic staff in Santa Rosa and surrounding area are affected by the Tubbs Fire. Best wishes to all, and be safe! It is devastating. https://t.co/pVqAFisxKd
+
+The first tweet used the word "great" to describe the football player but the overall sentiment should have been negative due to Cliff losing his possessions in the fire. Many tweets consisting of "Thank you" or "Be safe" were seen as positive from the syuzhet model, when the overall message of the tweet was in a negative context. This subtle distinction was correctly picked up by the roBERTa-base model.
+
+**Examples of positive for roBERTa-base and negative for syuzhet**
+
+* This Friday's midnight showing the Rocky Horror Picture Show is now a benefit for Tubbs Fire victims: https://t.co/Su7tOzcnfm
+
+* All I can say is wow. Props to Berkeley #firefighters. Crazy video of firefighters stunned by scope of Tubbs Fire https://t.co/8kZwh6g5uy
+
+These two examples highlight how the syuzhet package was tricked into a negative classification when the tweet should have been seen as positive. The describing of the movie has some words associated with negativity but the overall message of tweet was a benefit for Tubbs Fire victim, this was correctly picked up on by roBERTa-base. The second tweet is a user thanking the firefighters, the fact that she was stunned by the scope of the fire made syuzhet believe the tweet was negative. However, she tweeted this to give props to the firefighters. These examples highlight how the roBERTa-base model was more effective at distinguishing subtle nuances in tweets, resulting in more accurate classifications of sentiment.

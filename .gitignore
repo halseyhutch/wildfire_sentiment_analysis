@@ -5,3 +5,4 @@ roberta_twitter_sentiment/
 *.csv
 *.png
 *.jpg
+data/.Rhistory

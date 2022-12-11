@@ -1,0 +1,247 @@
+---
+title: "Final Paper Part 1"
+author: "Sam Kalman and Charles Hutchinson"
+date: "2022-12-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F}
+# Load Package
+library(syuzhet)
+library(tidyverse)
+```
+
+```{r, message = F}
+# Load and Join Bay Area Fire Tweets
+
+# 4680 Tweets by 7 Variables
+bay_area_tweets <- readRDS("bay_area_tweets.RDS")
+# 3807 Users by 8 Variables
+bay_area_users <- readRDS("bay_area_users.RDS")
+colnames(bay_area_users)[1] <- "author_id"
+
+bay_area_bert <- read_csv("bay_area_sentiment.csv")
+
+bay_area_tweets <- cbind(bay_area_tweets, 
+                         bay_area_bert$label, 
+                         bay_area_bert$score)
+
+colnames(bay_area_tweets)[8] <- "bert_sent"
+colnames(bay_area_tweets)[9] <- "bert_score"
+
+# 3294 Unique Users
+bay_area_users <- bay_area_users %>% 
+  group_by(author_id) %>% 
+  summarize_all(max)
+
+# Join into one table
+bay <- inner_join(bay_area_tweets, bay_area_users, by = "author_id") %>%
+  mutate(fire = "Bay Area Fire")
+```
+
+```{r, message = F}
+# Load and Join Camp Fire Tweets
+
+# 50469 Tweets by 7 Variables
+camp_tweets <- readRDS("camp_tweets.RDS")
+# 44376 Users by 8 Variables
+camp_users <- readRDS("camp_users.RDS")
+colnames(camp_users)[1] <- "author_id"
+
+camp_bert <- read_csv("camp_sentiment.csv")
+
+camp_tweets <- cbind(camp_tweets, 
+                         camp_bert$label, 
+                         camp_bert$score)
+
+colnames(camp_tweets)[8] <- "bert_sent"
+colnames(camp_tweets)[9] <- "bert_score"
+
+# 26353 Unique Users
+camp_users <- camp_users %>% 
+  group_by(author_id) %>% 
+  summarize_all(max)
+
+# Join into one table
+camp <- inner_join(camp_tweets, camp_users, by = "author_id") %>%
+  mutate(fire = "Camp Fire")
+```
+
+```{r, message = F}
+# Load and Join Dixie Fire Tweets
+
+# 26139 Tweets by 7 Variables
+dixie_tweets <- readRDS("dixie_tweets.RDS")
+# 21230 Users by 8 Variables
+dixie_users <- readRDS("dixie_users.RDS")
+colnames(dixie_users)[1] <- "author_id"
+
+dixie_bert <- read_csv("dixie_sentiment.csv")
+
+dixie_tweets <- cbind(dixie_tweets, 
+                         dixie_bert$label, 
+                         dixie_bert$score)
+
+colnames(dixie_tweets)[8] <- "bert_sent"
+colnames(dixie_tweets)[9] <- "bert_score"
+
+# 11438 Unique Users
+dixie_users <- dixie_users %>% 
+  group_by(author_id) %>% 
+  summarize_all(max)
+
+# Join into one table
+dixie <- inner_join(dixie_tweets, dixie_users, by = "author_id") %>%
+  mutate(fire = "Dixie Fire")
+```
+
+```{r, message = F}
+# Load and Join Tubbs Fire Tweets
+
+# 3530 Tweets by 7 Variables
+tubbs_tweets <- readRDS("tubbs_tweets.RDS")
+# 2826 Users by 8 Variables
+tubbs_users <- readRDS("tubbs_users.RDS")
+colnames(tubbs_users)[1] <- "author_id"
+
+tubbs_bert <- read_csv("tubbs_sentiment.csv")
+
+tubbs_tweets <- cbind(tubbs_tweets, 
+                         tubbs_bert$label, 
+                         tubbs_bert$score)
+
+colnames(tubbs_tweets)[8] <- "bert_sent"
+colnames(tubbs_tweets)[9] <- "bert_score"
+
+# 2334 Unique Users
+tubbs_users <- tubbs_users %>% 
+  group_by(author_id) %>% 
+  summarize_all(max)
+
+# Join into one table
+tubbs <- inner_join(tubbs_tweets, tubbs_users, by = "author_id") %>%
+  mutate(fire = "Tubbs Fire")
+```
+
+```{r}
+# Create Main Data Frame
+main <- rbind(bay, camp, dixie, tubbs)
+
+# Keep a copy of original tweet
+main$orig_text <- main$text
+```
+
+```{r}
+# Pre-Processing
+## Remove links and websites
+main$text <- gsub("https.*","",main$text)
+main$text <- gsub("http.*","",main$text)
+main$text <- gsub("www.*","",main$text)
+## Remove Twitter Handles
+main$text <- gsub("@([a-zA-Z0-9]|[_])*","",main$text)
+```
+
+```{r}
+# Run Sentiment from syuzhet package for pre-processed text
+syuzhet_df <- get_sentiment(main$text) %>% as.data.frame()
+```
+
+```{r}
+# Add syuzhet sentiment score to main dataframe
+main <- cbind(main, syuzhet_df)
+colnames(main)[19] <- "syuzhet_score"
+```
+
+```{r}
+# Syuzhet Range: -7.10 to 6.35
+# > 0 is Positive
+# < 0 is Negative
+# = 0 is Neutral
+# Add syuzhet sentiment score classification
+
+main <- main %>% 
+  mutate(syuzhet_sent = case_when(syuzhet_score > 0 ~ "positive", 
+                               syuzhet_score < 0 ~ "negative",
+                               syuzhet_score == 0 ~ "neutral"))
+```
+
+```{r}
+# Save DataFrame as CSV
+write.csv(main, "MainSentiment.csv", row.names = FALSE)
+```
+
+**Syuzhet**
+
+```{r}
+main %>%
+  filter(followers_count > 0 & 
+           following_count > 0 & 
+           like_count > 0) %>%
+  filter(!stringr::str_detect(description,'news')) %>%
+  mutate(fire = fct_relevel(fire, c("Tubbs Fire", 
+                      "Camp Fire", 
+                      "Bay Area Fire", 
+                      "Dixie Fire"))) %>%
+  group_by(fire) %>%
+  summarize(Positive = length(syuzhet_sent[syuzhet_sent == "positive"]) / n(),
+            Negative = length(syuzhet_sent[syuzhet_sent == "negative"]) / n(),
+            Neutral = length(syuzhet_sent[syuzhet_sent == "neutral"]) / n(),
+            Total = n()) %>%
+  gather(sentiment, percentage, Positive:Neutral) %>%
+  mutate(
+    se = sqrt(percentage * (1 - percentage) / Total),
+    lower = percentage - 2 * se,
+    upper = percentage + 2 * se) %>%
+  ggplot(aes(x = fire, y = percentage, fill = sentiment)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.3) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper)
+                , position = "dodge"
+                , color = "black") +
+  scale_fill_manual(values = c("red2", "blue", "darkgreen")) +
+  labs(title = "Syuzhet Sentiment Analysis",
+       x = "Fire",
+       y = "Proportion of Tweets",
+       fill = "Sentiment") +
+  theme_bw()
+```
+
+**BERT**
+
+```{r}
+ main %>%
+  filter(followers_count > 0 & 
+           following_count > 0 & 
+           like_count > 0) %>%
+  filter(!stringr::str_detect(description,'news')) %>%
+  mutate(fire = fct_relevel(fire, c("Tubbs Fire", 
+                      "Camp Fire", 
+                      "Bay Area Fire", 
+                      "Dixie Fire"))) %>%
+  group_by(fire) %>%
+  summarize(Positive = length(bert_sent[bert_sent == "positive"]) / n(),
+            Negative = length(bert_sent[bert_sent == "negative"]) / n(),
+            Neutral = length(bert_sent[bert_sent == "neutral"]) / n(),
+            Total = n()) %>%
+  gather(sentiment, percentage, Positive:Neutral) %>%
+  mutate(
+    se = sqrt(percentage * (1 - percentage) / Total),
+    lower = percentage - 2 * se,
+    upper = percentage + 2 * se) %>%
+  ggplot(aes(x = fire, y = percentage, fill = sentiment)) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.3) + 
+  geom_errorbar(aes(ymin = lower, ymax = upper)
+                , position = "dodge"
+                , color = "black") +
+  scale_fill_manual(values = c("red2", "blue", "darkgreen")) +
+  labs(title = "BERT Sentiment Analysis",
+       x = "Fire",
+       y = "Proportion of Tweets",
+       fill = "Sentiment") +
+  theme_bw()
+```
+
+

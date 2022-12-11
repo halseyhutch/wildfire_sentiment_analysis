@@ -23,8 +23,8 @@ n <- 100000
 # tubbs fire: October 2017
 params = list(
   `query` = 'fire -is:retweet lang:en place_country:US',
-  `start_time` = '2020-08-15T00:00:00.00Z',
-  `end_time` = '2020-09-15T00:00:00.00Z',
+  `start_time` = '2017-10-01T00:00:00.00Z',
+  `end_time` = '2017-11-01T00:00:00.00Z',
   `max_results` = '500',
   `tweet.fields` = 'created_at,lang,public_metrics',
   `expansions` = 'geo.place_id',
@@ -78,6 +78,13 @@ while (nrow(tweets) < n) {
     simplifyDataFrame = TRUE
   )
   
+  if (!is.null(result$title)) {
+    if (result$title == 'Too Many Requests') {
+      print('Waiting for Twitter API...')
+      Sys.sleep(60)
+      next
+    } 
+  }
   
   tweet_df <- cbind(
     result$data$text,
@@ -123,8 +130,8 @@ while (nrow(tweets) < n) {
   
 }
 
-saveRDS(tweets, 'bay_area_fire_tweets.RDS')
-saveRDS(places, 'bay_area_fire_places.RDS')
+saveRDS(tweets, 'tubbs_fire_tweets.RDS')
+saveRDS(places, 'tubbs_fire_places.RDS')
 
 # t3 <- readRDS('dixie_tweets.RDS')
 
