@@ -80,7 +80,7 @@ We found that most tweets from news organization contained neutral, non-opiniona
 
 We used two sentiment analysis algorithms of varying complexity to classify the aforementioned tweets. The first algorithm we used was from the `syuzhet` package^[https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6] in R. The `syuzhet` package returns sentiment scores on a spectrum of positively/negativity using a sentiment dictionary developed in the Nebraska Literacy Labs. We deemed any sentiment score that was greater than zero to be positive, less than zero, negative, and exactly equal to zero, neutral. Unfortunately, the `syuzhet` package wasn't designed for or trained on short, declarative statements such as tweets.
 
-To overcome this issue, we decided to use Cardiff's roBERTa-base model for sentiment analysis as well.^[https://huggingface.co/cardiffnlp/twitter-roBERTa-sentiment-latest] This model was trained on roughly 124 million tweets from January 2018 to December 2021, using the TweetEval benchmark to fine tune the sentiment analysis. The model outputs probabilities that a tweet is positive, neutral, or negative. For the purposes of our analysis, we simplified the output to a categorical variable representing the sentiment with the highest probability. (Strength of sentiment was not captured.)
+To overcome this issue, we decided to use Cardiff's roBERTa-base model for sentiment analysis as well.^[https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest] This model was trained on roughly 124 million tweets from January 2018 to December 2021, using the TweetEval benchmark to fine tune the sentiment analysis. The model outputs probabilities that a tweet is positive, neutral, or negative. For the purposes of our analysis, we simplified the output to a categorical variable representing the sentiment with the highest probability. (Strength of sentiment was not captured.)
 
 BERT models are trained on both language modeling and next sentence prediction. It is important to note that BERT models generally do not use words as tokens - they use a combination of word-level, segment-level, and position-level tokens to encode the input text. Word-level tokens are individual words or sub-words in the input text, segment-level tokens are used to indicate whether a given word is part of the first or second sentence in a pair of sentences (in the case of sentence-pair tasks), and position-level tokens are used to indicate the position of each word within the input text. This may convey some of the complexity of the contextual embedding performed in the model. Regardless, we note that the word counts in Tables 1 and 2 are not accurate token counts for Cardiff's roBERTa model.
 
@@ -263,5 +263,25 @@ As mentioned previously, data quality was the limiting factor for this analysis.
 In our first data set (Table 1), sample size varied by more than an order of magnitude between certain fires. It was surprising that we could not find more tweets for the Bay Area and Tubbs fires, given their proximity to San Francisco. We originally suspected that the Camp Fire tweet set contained many false positives, but it appears that fire generated more engagement than expected due to the almost total devastation (and subsequent press coverage) of the towns of Paradise, Concow, Magalia, and Butte Creek Canyon. The Dixie Fire was similarly destructive. As the largest ever single wildfire in the state's history, part of its impact included popular Lassen National Park, the coverage of which likely increased engagement on Twitter.
 
 Given more time, it would have been helpful to correct for fire intensity. These fires were all record-setting, but they took place in different conditions. Some were closer to urban centers, and some were quite far. Some took place in the middle of summer and were coincident with a large set of other wildfires, while others (particularly the Camp Fire) took place later in the season, in near isolation. Early September of 2020, near the peak of the Bay Area fires, was a particularly striking example of how catastrophic these coincident fires could be (see Figure 4). It would be particularly interesting to compare sentiment to air quality, though we suspect the combination of (typically) rapid fluctuations in air quality and the sparsity of location-enabled tweets on any given day would make robust statistical conclusions difficult.
+
+## References
+
+Anon. n.d. “Wildfires and Acres.” Nifc.gov. \
+(https://www.nifc.gov/fire-information/statistics/wildfires)
+
+Jockers, M. (2020), “Syuzhet Package - RDocumentation.” Rdocumentation.org. \
+(https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6).
+
+Lou, D & Camacho-Collados, J (2022).
+“Cardiffnlp/Twitter-Roberta-Base-Sentiment-Latest · Hugging Face.” 
+Huggingface.Co. \
+(https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest).
+
+Sagar, Chaitanya. 2018. “Twitter Sentiment Analysis Using R.” Dataaspirant. \ 
+(https://dataaspirant.com/twitter-sentiment-analysis-using-r/).
+
+### Please see submitted GitHub Repository for associated Code Appendix
+
+
 
  ![Wildfire Smoke as of September 9, 2020. By [NASA Earth Observatory](https://earthobservatory.nasa.gov/images/147261/a-wall-of-smoke-on-the-us-west-coast?src=nha).](Western_fires_2020.jpg) 
