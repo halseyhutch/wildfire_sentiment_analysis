@@ -1,5 +1,5 @@
 ---
-title: "INSERT"
+title: "Trial by Fire: Diachronic and Regional Sentiment Towards American Wildfires"
 author: "Charles Hutchinson, Sam Kalman"
 date: "December 12, 2022"
 output: pdf_document
@@ -17,15 +17,18 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 ## Abstract
 
+We analyzed diachronic regional trends in public tweets about wildfires to better understand public perception towards climate change. Processing over 350,000 tweets, we used both a dictionary-based approach in the `syuzhet` R package and a roBERTa model from researchers at Cardiff University for sentiment analysis. We found that sentiment has become increasingly negative over time, particularly in the Pacific Northwest. This conclusion could be reinforced by directly comparing air quality and sentiment.
+
 ## Introduction
 
-One of North America's most noticeable symptoms of climate change has been a dramatic increase in the volume and intensity of wildfires, particularly in its western regions. August and September were previously defined by clear skies and fair weather, but fire and smoke have become a recurrent factor in this area. According to the National Interagency Fire Center (NIFC), more acreage burned nationally in each of the last seven years than any single year but one in the first ten years this data was collected (1983-1993, ex. 1988).^[See https://www.nifc.gov/fire-information/statistics/wildfires.] With more and more people affected by the increase in wildfire activity, it's reasonable to infer an increasing outcry of negativity towards this devastating symptom of climate change. However, it is hypothesized that the negative outcry may only come from people directly affected by the fire. An, "out of sight, out of mind", mentality may be prevalent in the United States, particularly around the affects of wildfires. We explored four recent US wildfires, that took place sequentially with the past 5 years, to analyze if and how public sentiment has shifted over time with respect to these cataclysmic events. Specifically, we sought to answer the following two questions. 
+One of North America's most noticeable symptoms of climate change has been a dramatic increase in the volume and intensity of wildfires in its western regions. August and September were previously defined by clear skies and fair weather, but fire and smoke have become a recurrent factor in this area. According to the National Interagency Fire Center (NIFC), more acreage burned nationally in each of the last seven years than any single year but one in the first ten years this data was collected (1983-1993, ex. 1988).^[See https://www.nifc.gov/fire-information/statistics/wildfires.] With more and more people affected by the increase in wildfire activity, it's reasonable to infer an increasing outcry of negativity towards this devastating symptom of climate change. However, less is known about regional attitudes towards this recent trend. As with many other catastrophes, is it true that wildfires are "out of sight, out of mind" for those not directly affected?
 
-* How has public sentiment towards wildfires changed in the past 5 years?
+We explored four recent US wildfires that took place in the past five years to analyze if and how public sentiment has shifted over time with respect to these cataclysmic events. Specifically, we sought to answer the following two questions: 
 
-* Is this change regionalized? Is public sentiment only shifted by those directly affected by these devastating events?
+1. How has public sentiment towards wildfires changed in the past five years?
+2. Is this change regionalized? Are changes in sentiment (if any) limited to those directly affected by these devastating events?
 
-We compared two different sentiment analysis algorithms in hopes of gaining some insight into public perceptions of climate change.
+We compared two different sentiment analysis algorithms in the hopes of gaining some insight into changing public perceptions of climate change.
 
 ## Data
 
@@ -48,16 +51,16 @@ data.frame(
   Tweets = c(3530, 50469, 4680, 26139),
   Words = c(51187, 1021221, 129082, 577785)
 ) %>%
-  kableExtra::kbl(caption = "Relevant Tweets per Recent Wildfire.", booktabs = T, linesep = "") %>%
+  kableExtra::kbl(caption = "Tweet Counts by Wildfire.", booktabs = T, linesep = "") %>%
   kableExtra::kable_styling(latex_options = "HOLD_position") %>%
   kableExtra::kable_classic()
 ```
 
 Our twitter license included access to a range of metadata. We chose to analyze tweet level information (specifically Likes, Retweet, Quote Tweets, and Date), as well as certain user level information (specifically Followers, Following, Biography, and Twitter Name).
 
-Filtering for tweets that explicitly mentioned the fire by name significantly limited the total number of results. This proved to be particularly debilitating when working on location-based analyses, since only a subset of that limited population reported their location while tweeting. To alleviate this problem, we chose to use much more generic search terms. For the purposes of this paper, we found the search term "fire" tended to return the most relevant results (as compared to similarly broad terms like "smoke" or "burn"), though this was not a systematic decision. Nonetheless, it is hard to argue that "fire" is not an appropriate search term to use when conducting sentiment analysis on wildfires.
+Filtering for tweets that explicitly mentioned the fire by name significantly limited the total number of results. This proved to be particularly debilitating when working on location-based analyses, since only a subset of that limited population reported their location while tweeting. To alleviate this problem, we chose to use much more generic search terms when conducting our location-based analyses. For the purposes of this paper, we found the search term "fire" tended to return the most relevant results (as compared to similarly broad terms like "smoke" or "burn"), though this was not a systematic decision. Nonetheless, it is hard to argue that "fire" is not an appropriate search term to use when conducting sentiment analysis on wildfires.
 
-We continued to use the same date windows for each fire. As before, we only pulled English tweets, and filtered out any retweets. We asked the Twitter API to filter for tweets in the United States, then manually filtered those tweets down to those made in the contiguous lower 48 with longitude and latitude filters. Twitter provides locations in a bounding box, not on a single point, so we assumed that each tweet was made in the center of the bounding box. This was somewhat problematic when dealing with state-size bounding boxes, but the vast majority of locations were given on the city level, with much smaller bounding boxes.
+In our location-based analyses, we continued to use the same date windows for each fire. As before, we only pulled English tweets, and filtered out any retweets. We asked the Twitter API to filter for tweets in the United States, then manually filtered those tweets down to those made in the continental US with longitude and latitude filters. Twitter provides locations in a bounding box, not on a single point, so we assumed that each tweet was made in the center of the bounding box. This was somewhat problematic when dealing with state-size bounding boxes, but the vast majority of locations were given on the city level, with much smaller bounding boxes.
 
 ```{r}
 data.frame(
@@ -65,38 +68,32 @@ data.frame(
   Tweets = c(36353, 71608, 84284, 76839),
   Words = c(749509, 1468934, 1746368, 1165880)
 ) %>%
-  kableExtra::kbl(caption = "Location-Enabled Tweet Counts", booktabs=T, linesep = "") %>%
+  kableExtra::kbl(caption = "Location-Enabled Tweet Counts by Wildfire.", booktabs=T, linesep = "") %>%
   kableExtra::kable_styling(latex_options = "HOLD_position") %>%
   kableExtra::kable_classic()
 ```
 
+We found that most tweets from news organization contained neutral, non-opinionated information, which wasn’t useful for our research question. As such, any tweet made by a user with the word "meteorology" in their Twitter biography was not considered in our analysis. Additionally, in an attempt to filter out bots adding unnecessary noise to the data, we only used tweets from users with at least one follower, and the tweet itself needed at least one external interaction (a like/retweet/comment). It's worth noting that the authors of Cardiff's roBERTa model (Loureriro et al., 2022) addressed the bot issue by filtering out the top 1% of users by volume, but we did not have a similarly unbiased data set to determine an appropriate posting cutoff.
+
 ## Methods
 
-# Sentiment Analysis
+We used two sentiment analysis algorithms of varying complexity to classify the aforementioned tweets. The first algorithm we used was from the `syuzhet` package^[https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6] in R. The `syuzhet` package returns sentiment scores on a spectrum of positively/negativity using a sentiment dictionary developed in the Nebraska Literacy Labs. We deemed any sentiment score that was greater than zero to be positive, less than zero, negative, and exactly equal to zero, neutral. Unfortunately, the `syuzhet` package wasn't designed for or trained on short, declarative statements such as tweets.
 
-We used two sentiment analysis algorithms of varying complexity to classify the aforementioned tweets. The first algorithm we used was from the `syuzhet` package^[https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6] in R. The syuzhet package returns sentiment scores on a spectrum of positively/negativity using a sentiment dictionary developed in the Nebraska Literacy Labs. We deemed any sentiment score that was greater than zero to be positive, less than zero, negative, and exactly equal to zero, neutral. Unfortunately, the `syuzhet` package wasn't designed or trained on short, declarative statements such as tweets.
-
-To overcome this issue, we decided to use Cardiff's roBERTa-base model for sentiment analysis.^[https://huggingface.co/cardiffnlp/twitter-roBERTa-sentiment-latest] This model was trained on roughly 124 million tweets from January 2018 to December 2021 and used the TweetEval benchmark for fine tuning the sentiment analysis. The algorithm outputs probabilities that a tweet is positive, neutral, or negative. For the purposes of our analysis, we simplified the output to a categorical variable representing the sentiment with the highest probability. (Strength of sentiment was not captured.)
+To overcome this issue, we decided to use Cardiff's roBERTa-base model for sentiment analysis as well.^[https://huggingface.co/cardiffnlp/twitter-roBERTa-sentiment-latest] This model was trained on roughly 124 million tweets from January 2018 to December 2021, using the TweetEval benchmark to fine tune the sentiment analysis. The model outputs probabilities that a tweet is positive, neutral, or negative. For the purposes of our analysis, we simplified the output to a categorical variable representing the sentiment with the highest probability. (Strength of sentiment was not captured.)
 
 BERT models are trained on both language modeling and next sentence prediction. It is important to note that BERT models generally do not use words as tokens - they use a combination of word-level, segment-level, and position-level tokens to encode the input text. Word-level tokens are individual words or sub-words in the input text, segment-level tokens are used to indicate whether a given word is part of the first or second sentence in a pair of sentences (in the case of sentence-pair tasks), and position-level tokens are used to indicate the position of each word within the input text. This may convey some of the complexity of the contextual embedding performed in the model. Regardless, we note that the word counts in Tables 1 and 2 are not accurate token counts for Cardiff's roBERTa model.
 
-We found that most tweets from news organization contained neutral, non-opinionated information, which wasn’t useful for our research question. Therefore ,any tweet that came from a user with the word "meteorology" in their bio was not considered in our analysis. Additionally, in an attempt to filter out bots adding unnecessary noise to the data, we only used tweets from users with at least one follower, and the tweet itself needed at least one external interaction (a like/retweet/comment). This was done consistently before running both of the discussed sentiment algorithms. It's worth noting that the authors of Cardiff's roBERTa model (Loureriro et al., 2022) address the bot issue by filtering out the top 1% of users by volume, but we did not have a similarly unbiased data set to determine an appropriate posting cutoff.
+To track to sentiment shift through time, we chronologically ordered the fires (Tubbs Fire, Camp Fire, Bay Area Fire, Dixie Fire) and calculated the proportion of each sentiment for each fire. We used proportions because of the unequal distribution of tweets across the fires.
 
-# Change through time
-
-To track to sentiment shift through time, we chronologically ordered the fires (Tubbs Fire, Camp Fire, Bay Area Fire, Dixie Fire) and calculated the proportion of each sentiment for each fire. We used proportions because of the unequal distribution of tweets across the fires. 
-
-# Effect of location
-
-We first converted from longitude/latitude coordinates to WGS84 coordinates, then projected these coordinates using a Lambert Conformal Conic projection (LCC). This process was completed using the `sf` package. [ADD MORE HERE]
+Plotting sentiment by location proved to be a more involved task. As stated in the Data section, we chose to simplify the provided bounding boxes for each tweet to the center point. From there, we converted from longitude/latitude coordinates to WGS84 coordinates, then projected these coordinates using a Lambert Conformal Conic projection (LCC). This process was completed using the `sf` package. Using these transformed coordinates and the corresponding sentiments, we used weighted k-nearest neighbors with a Gaussian kernel to interpolate probabilities of a given sentiment across the map.
 
 ## Results
 
-# Change through time
+### Change Over Time
 
-In Figure 1, we plot the sentiment classification proportions for each of the four wildfires. The fires are in chronological order, beginning with Tubbs Fire and ending with the Dixie Fire. The error bars reflect a 95% confidence interval for each proportion.
+In Figure 1, we plot the sentiment classification proportions for each of the four wildfires. The fires are in chronological order, beginning with Tubbs Fire and ending with the Dixie Fire. The error bars reflect a 95% confidence interval for each proportion. There are not many neutral tweets, though our definition of neutrality with the `syuzhet` scoring is quite stringent. The majority of tweets are classified as negative, and the proportion of negativity increases over time.
 
-```{r, fig.height=3, fig.width=6,fig.cap="Shift in Wildfire Sentiment Over Time."}
+```{r, fig.height=3, fig.width=6, fig.cap="Shift in Wildfire Sentiment Over Time."}
 
 main <- read_csv("data/MainSentiment.csv") 
 
@@ -133,10 +130,6 @@ main %>%
   theme_bw()
 ```
 
-There are not many neutral tweets, though our definition of neutrality with the `syuzhet` scoring is quite stringent. The majority of tweets are classified as negative, and the proportion of negativity appears to be increasing through time. 
-
-We repeat the same analysis using scores from Cardiff's roBERTa model in Figure 2.
-
 ```{r, fig.height=3, fig.width=6,fig.cap="Shift in Wildfire Sentiment Over Time."}
 main %>%
   filter(followers_count > 0 & 
@@ -172,43 +165,17 @@ main %>%
 
 ```
 
-The roBERTa model classifies a much larger proportion of the tweets as neutral. In previous iterations of this analysis, it was difficult for us to remove all news related tweets. We found that this iteration was very effective at putting "inorganic" reactions from news organizations in this neutral category. However, the roBERTa model classified less negativity for the Tubbs fire than the syuzhet package and we see a more consistent increase in negativity, plateauing at the Bay Area Fire and Dixie Fire. It was difficult for us to remove all news related tweets, roBERTa model
+We repeat the same analysis using scores from Cardiff's roBERTa model in Figure 2. The roBERTa model classifies a much larger proportion of the tweets as neutral. In previous iterations of this analysis, it was difficult for us to remove all news related tweets. We found that this iteration was very effective at putting "inorganic" reactions from news organizations in this neutral category. Additionally, the roBERTa model classified less negativity for the Tubbs fire than the `syuzhet` package and we see a more consistent increase in negativity, plateauing at the Bay Area Fire and Dixie Fire.
 
-# Effect of Location
+### Effect of Location
 
-# Comparison of Sentiment Analysis Algorithm
+Figure 3 shows the interpolated roBERTa sentiment probabilities across the continental US. The obvious trend is one of consolidation - in particular, the Pacific Northwest has become increasingly negative about fires during fire season. As one of the hardest hit regions by these catastrophes in the country, this is not a surprising result.
 
-Let's examine differences in specific tweet classifation between the syuzhet and roBERTa model. Specifically, for the Tubbs fire where we saw less negativity classified by the roBERTa model. It was difficult for us to remove all news related tweets. roBERTa model classified a lot of these as neutral when the syuzhet package would incorrectly assig the tweet as slightly positive or slightly negative.
+It is important to reiterate that these maps use a more generic data set than the bar plots above. Specific mention of the fire's name was not required - only the term "fire" was needed. There are a wide variety of ways that the term "fire" is used on Twitter, many of which are not related to wildfires. Manual inspection revealed that this accounts for the large swaths of positive tweets in plots such as Figures 3a and 3d. However, we were unable to find a robust explanation for the regional variation in positivity over time.
 
-**Examples of neutral for roBERTa and negative for syuzhet**
+The intensity of color in Figure 3 corresponds to probability of a given sentiment, not volume. Plotting by the latter would result in a mostly blank map, with a few spots of color around urban centers.
 
-* Where Did the Tubbs Fire Begin? Investigators Scour the Ashes https://t.co/9z2QjBXi77
-
-* The cause of the massive Tubbs fire is still unknown -- but officials think they may be zeroing in: https://t.co/0k9w4nFgpE.
-
-These are examples of truly neutral tweets from news organizations. However, the syuzhet package tends to not assign many neutral tweets. These were incorrectly classified as negative by syuzhet, possibly due to words like "scour" or "unknown", but correctly seen as neutral from roBERTa.
-
-**Examples of negative for roBERTa and positive for syuzhet**
-
-* The personal treasures former Raiders great Cliff Branch lost in Santa Rosa fires--a truly sad tale by Bob Padecky. https://t.co/gIT0AulURq
-
-* My parents lost everything in the Tubbs Fire yesterday. Anything will help. Please share as much as you can. Thank you so much. #tubbsfire https://t.co/xFAexYshSL
-
-* Many Sonic staff in Santa Rosa and surrounding area are affected by the Tubbs Fire. Best wishes to all, and be safe! It is devastating. https://t.co/pVqAFisxKd
-
-The first tweet used the word "great" to describe the football player but the overall sentiment should have been negative due to Cliff losing his possessions in the fire. Many tweets consisting of "Thank you" or "Be safe" were seen as positive from the syuzhet model, when the overall message of the tweet was in a negative context. This subtle distinction was correctly picked up by the roBERTa model.
-
-**Examples of positive for roBERTa and negative for syuzhet**
-
-* This Friday's midnight showing the Rocky Horror Picture Show is now a benefit for Tubbs Fire victims: https://t.co/Su7tOzcnfm
-
-* All I can say is wow. Props to Berkeley #firefighters. Crazy video of firefighters stunned by scope of Tubbs Fire https://t.co/8kZwh6g5uy
-
-These two examples highlight how the syuzhet package was tricked into a negative classification when the tweet should have been seen as positive. The describing of the movie has some words associated with negativity but the overall message of tweet was a benefit for Tubbs Fire victim, this was correctly picked up on by roBERTa. The second tweet is a user thanking the firefighters, the fact that she was stunned by the scope of the fire made syuzhet believe the tweet was negative. However, she tweeted this to give props to the firefighters. These examples highlight how the roBERTa model was more effective at distinguishing subtle nuances in tweets, resulting in more accurate classifications of sentiment.
-
-Important to note that Tubbs was much shorter, and the other summer fires were usually coincident with a broader wildfire season. [ADD MORE HERE]
-
-```{r, fig.cap = "Tweet Sentiment (roBERTa) by Location", fig.height = 7, fig.subcap = c("Dixie (2021)", "Bay Area (2020)", "Camp (2018)", "Tubbs (2017)"), fig.ncol = 2, out.width = "50%", fig.align='center'}
+```{r, fig.cap = "Tweet Sentiment (roBERTa) by Location.", fig.height = 7, fig.subcap = c("Dixie (2021)", "Bay Area (2020)", "Camp (2018)", "Tubbs (2017)"), fig.ncol = 2, out.width = "50%", fig.align='center'}
 
 raster_df <- readRDS('data/dixie_map_data.RDS')
 us <- readRDS('data/us_map_data.RDS')
@@ -256,12 +223,44 @@ ggplot(data = raster_df) +
   theme(legend.title=element_blank())
 ```
 
+### Comparison of Models
+
+While performing manual checks of each model's sentiment classification, we were consistently impressed by the performance of Cardiff's model. The BERT framework was able to capture context in a way that was impossible for `syuzhet`'s dictionary-based approach. We elaborate on some common cases we saw below.
+
+**1. Neutral roBERTa + Negative `syuzhet`**
+
+> Where Did the Tubbs Fire Begin? Investigators Scour the Ashes https://t.co/9z2QjBXi77
+
+> The cause of the massive Tubbs fire is still unknown -- but officials think they may be zeroing in: https://t.co/0k9w4nFgpE.
+
+These are examples of neutral tweets from news organizations. These were incorrectly classified as negative by `syuzhet`, due to words like "scour" or "unknown", though we note that the requirement of a zero sentiment score for neutrality contributed to this incorrect classification.
+
+**2. Positive roBERTa + Negative `syuzhet`**
+
+> This Friday's midnight showing the Rocky Horror Picture Show is now a benefit for Tubbs Fire victims: https://t.co/Su7tOzcnfm
+
+> All I can say is wow. Props to Berkeley #firefighters. Crazy video of firefighters stunned by scope of Tubbs Fire https://t.co/8kZwh6g5uy
+
+In the first tweet, `syuzhet` is misled by the title of the movie (Rocky Horror Picture Show), while roBERTa identifies the altruistic context (a charity showing). In the second tweet, `syuzhet` overweights the negative language with respect to the fire, while roBERTa correctly captures the heroic context of the tweet. These examples highlight how the roBERTa model was more effective at distinguishing subtle nuances in tweets, resulting in more accurate classifications of sentiment.
+
+**3. Negative roBERTa + Positive `syuzhet`**
+
+> The personal treasures former Raiders great Cliff Branch lost in Santa Rosa fires--a truly sad tale by Bob Padecky. https://t.co/gIT0AulURq
+
+> My parents lost everything in the Tubbs Fire yesterday. Anything will help. Please share as much as you can. Thank you so much. #tubbsfire https://t.co/xFAexYshSL
+
+> Many Sonic staff in Santa Rosa and surrounding area are affected by the Tubbs Fire. Best wishes to all, and be safe! It is devastating. https://t.co/pVqAFisxKd
+
+The first tweet uses the word "great" to describe the football player Cliff Branch, but the overall sentiment should be negative due to Branch losing his possessions in the fire. Many tweets containing the terms "thank you" or "be safe" were seen as positive by the `syuzhet` model, when the overall message of the tweet was in a negative context. For the purposes of our analysis, this distinction was the most important improvement between roBERTa and `syuzhet`'s output.
+
 ## Discussion
 
-[Add subheaders for each section]
-
-Even though the tweet volume was not consistent throughout time, Figure 1 gives us preliminary evidence that there may have been a shift in tweet sentiment towards wildfires in the last five years. Beginning with Camp Fire, the amount of negative tweets significantly increased for each wildfire.
+Figures 1 and 2 shows evidence of a negative shift in sentiment towards wildfires in the last five years. The increase in negativity is broadly consistent between sentiment models. Figure 3 shows an increasing concentration of negative sentiment towards fire in the Pacific Northwest. We propose that negative sentiment towards wildfires has become increasingly localized over the past five years.
 
 As mentioned previously, data quality was the limiting factor for this analysis. It was difficult to find a set of relevant tweets using a consistent methodology for each fire. Finding a balance between organic and relevant reactions ended up requiring more judgment than we would have liked.
 
-It was surprising that we could not find more tweets for the Bay Area and Tubbs fires, given their proximity to major urban centers. We originally suspected that the Camp Fire tweet set contained many false positives, but it appears that fire generated more engagement than expected due to the almost total devastation (and subsequent press coverage) of the towns of Paradise, Concow, Magalia, and Butte Creek Canyon. The Dixie Fire was similarly destructive. As the largest ever single wildfire in the state's history, part of its impact included popular Lassen National Park, the coverage of which likely increased engagement on Twitter.
+In our first data set (Table 1), sample size varied by more than an order of magnitude between certain fires. It was surprising that we could not find more tweets for the Bay Area and Tubbs fires, given their proximity to San Francisco. We originally suspected that the Camp Fire tweet set contained many false positives, but it appears that fire generated more engagement than expected due to the almost total devastation (and subsequent press coverage) of the towns of Paradise, Concow, Magalia, and Butte Creek Canyon. The Dixie Fire was similarly destructive. As the largest ever single wildfire in the state's history, part of its impact included popular Lassen National Park, the coverage of which likely increased engagement on Twitter.
+
+Given more time, it would have been helpful to correct for fire intensity. These fires were all record-setting, but they took place in different conditions. Some were closer to urban centers, and some were quite far. Some took place in the middle of summer and were coincident with a large set of other wildfires, while others (particularly the Camp Fire) took place later in the season, in near isolation. Early September of 2020, near the peak of the Bay Area fires, was a particularly striking example of how catastrophic these coincident fires could be (see Figure 4). It would be particularly interesting to compare sentiment to air quality, though we suspect the combination of (typically) rapid fluctuations in air quality and the sparsity of location-enabled tweets on any given day would make robust statistical conclusions difficult.
+
+ ![Wildfire Smoke as of September 9, 2020. By [NASA Earth Observatory](https://earthobservatory.nasa.gov/images/147261/a-wall-of-smoke-on-the-us-west-coast?src=nha).](Western_fires_2020.jpg) 

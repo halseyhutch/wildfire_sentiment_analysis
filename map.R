@@ -15,7 +15,7 @@ require(rgeos)
 
 setwd("~/msp/wildfire_sentiment_analysis/data")
 
-fire_name <- 'bay_area'
+fire_name <- 'dixie'
 tweets <- readRDS(paste0(fire_name, '_fire_tweets.RDS'))
 places <- readRDS(paste0(fire_name, '_fire_places.RDS'))
 sentiment <- read.csv(paste0(fire_name, '_fire_sentiment.csv'))
