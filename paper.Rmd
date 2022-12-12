@@ -1,5 +1,5 @@
 ---
-title: "Trial by Fire: Diachronic and Regional Sentiment Towards American Wildfires"
+title: "Trial by Fire: Diachronic Regional Sentiment Towards American Wildfires"
 author: "Charles Hutchinson, Sam Kalman"
 date: "December 12, 2022"
 output: pdf_document
@@ -264,6 +264,8 @@ In our first data set (Table 1), sample size varied by more than an order of mag
 
 Given more time, it would have been helpful to correct for fire intensity. These fires were all record-setting, but they took place in different conditions. Some were closer to urban centers, and some were quite far. Some took place in the middle of summer and were coincident with a large set of other wildfires, while others (particularly the Camp Fire) took place later in the season, in near isolation. Early September of 2020, near the peak of the Bay Area fires, was a particularly striking example of how catastrophic these coincident fires could be (see Figure 4). It would be particularly interesting to compare sentiment to air quality, though we suspect the combination of (typically) rapid fluctuations in air quality and the sparsity of location-enabled tweets on any given day would make robust statistical conclusions difficult.
 
+![Wildfire Smoke as of September 9, 2020. By [NASA Earth Observatory](https://earthobservatory.nasa.gov/images/147261/a-wall-of-smoke-on-the-us-west-coast?src=nha).](Western_fires_2020.jpg) 
+
 ## References
 
 Anon. n.d. “Wildfires and Acres.” Nifc.gov. \
@@ -272,7 +274,7 @@ Anon. n.d. “Wildfires and Acres.” Nifc.gov. \
 Jockers, M. (2020), “Syuzhet Package - RDocumentation.” Rdocumentation.org. \
 (https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6).
 
-Lou, D & Camacho-Collados, J (2022).
+Loureiro, D. et al. (2022).
 “Cardiffnlp/Twitter-Roberta-Base-Sentiment-Latest · Hugging Face.” 
 Huggingface.Co. \
 (https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest).
@@ -280,8 +282,6 @@ Huggingface.Co. \
 Sagar, Chaitanya. 2018. “Twitter Sentiment Analysis Using R.” Dataaspirant. \ 
 (https://dataaspirant.com/twitter-sentiment-analysis-using-r/).
 
-### Please see submitted GitHub Repository for associated Code Appendix
+## Code Appendix
 
-
-
- ![Wildfire Smoke as of September 9, 2020. By [NASA Earth Observatory](https://earthobservatory.nasa.gov/images/147261/a-wall-of-smoke-on-the-us-west-coast?src=nha).](Western_fires_2020.jpg) 
+Please find all code for this analysis at https://github.com/halseyhutch/wildfire_sentiment_analysis.
