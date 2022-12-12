@@ -64,10 +64,11 @@ In our location-based analyses, we continued to use the same date windows for ea
 
 ```{r}
 data.frame(
-  Fire = c('Dixie', 'Bay Area', 'Camp', 'Tubbs'),
+  Fire = c('Dixie Fire', 'Bay Area Fires', 'Camp Fire', 'Tubbs Fire'),
   Tweets = c(36353, 71608, 84284, 76839),
   Words = c(749509, 1468934, 1746368, 1165880)
 ) %>%
+  arrange(desc(row_number())) %>%
   kableExtra::kbl(caption = "Location-Enabled Tweet Counts by Wildfire.", booktabs=T, linesep = "") %>%
   kableExtra::kable_styling(latex_options = "HOLD_position") %>%
   kableExtra::kable_classic()
@@ -83,7 +84,7 @@ To overcome this issue, we decided to use Cardiff's roBERTa-base model for senti
 
 BERT models are trained on both language modeling and next sentence prediction. It is important to note that BERT models generally do not use words as tokens - they use a combination of word-level, segment-level, and position-level tokens to encode the input text. Word-level tokens are individual words or sub-words in the input text, segment-level tokens are used to indicate whether a given word is part of the first or second sentence in a pair of sentences (in the case of sentence-pair tasks), and position-level tokens are used to indicate the position of each word within the input text. This may convey some of the complexity of the contextual embedding performed in the model. Regardless, we note that the word counts in Tables 1 and 2 are not accurate token counts for Cardiff's roBERTa model.
 
-To track to sentiment shift through time, we chronologically ordered the fires (Tubbs Fire, Camp Fire, Bay Area Fire, Dixie Fire) and calculated the proportion of each sentiment for each fire. We used proportions because of the unequal distribution of tweets across the fires.
+To track to sentiment shift through time, we chronologically ordered the fires (Tubbs Fire, Camp Fire, Bay Area Fires, Dixie Fire) and calculated the proportion of each sentiment for each fire. We used proportions because of the unequal distribution of tweets across the fires. We apply the Bonferroni correction to our 95% confidence intervals to account for multiple testing.
 
 Plotting sentiment by location proved to be a more involved task. As stated in the Data section, we chose to simplify the provided bounding boxes for each tweet to the center point. From there, we converted from longitude/latitude coordinates to WGS84 coordinates, then projected these coordinates using a Lambert Conformal Conic projection (LCC). This process was completed using the `sf` package. Using these transformed coordinates and the corresponding sentiments, we used weighted k-nearest neighbors with a Gaussian kernel to interpolate probabilities of a given sentiment across the map.
 
@@ -91,7 +92,7 @@ Plotting sentiment by location proved to be a more involved task. As stated in t
 
 ### Change Over Time
 
-In Figure 1, we plot the sentiment classification proportions for each of the four wildfires. The fires are in chronological order, beginning with Tubbs Fire and ending with the Dixie Fire. The error bars reflect a 95% confidence interval for each proportion. There are not many neutral tweets, though our definition of neutrality with the `syuzhet` scoring is quite stringent. The majority of tweets are classified as negative, and the proportion of negativity increases over time.
+In Figure 1, we plot the sentiment classification proportions for each of the four wildfires. The fires are in chronological order, beginning with the Tubbs Fire and ending with the Dixie Fire. The error bars reflect a 95% confidence interval for each proportion. There are not many neutral tweets, though our definition of neutrality with the `syuzhet` scoring is quite stringent. The majority of tweets are classified as negative, and the proportion of negativity increases over time.
 
 ```{r, fig.height=3, fig.width=6, fig.cap="Shift in Wildfire Sentiment Over Time."}
 
@@ -114,8 +115,8 @@ main %>%
   gather(sentiment, percentage, Positive:Neutral) %>%
   mutate(
     se = sqrt(percentage * (1 - percentage) / Total),
-    lower = percentage - 2 * se,
-    upper = percentage + 2 * se) %>%
+    lower = percentage + qnorm(0.05*2/choose(3, 2))*se,
+    upper = percentage + qnorm(1 - 0.05*2/choose(3, 2))*se) %>%
   ggplot(aes(x = fire, y = percentage, fill = sentiment)) +
   geom_bar(stat = "identity", position = "dodge", alpha = 0.3) + 
   geom_errorbar(aes(ymin = lower, ymax = upper)
@@ -148,8 +149,8 @@ main %>%
   gather(sentiment, percentage, Positive:Neutral) %>%
   mutate(
     se = sqrt(percentage * (1 - percentage) / Total),
-    lower = percentage - 2 * se,
-    upper = percentage + 2 * se) %>%
+    lower = percentage + qnorm(0.05*2/choose(3, 2))*se,
+    upper = percentage + qnorm(1 - 0.05*2/choose(3, 2))*se) %>%
   ggplot(aes(x = fire, y = percentage, fill = sentiment)) +
   geom_bar(stat = "identity", position = "dodge", alpha = 0.3) + 
   geom_errorbar(aes(ymin = lower, ymax = upper)
@@ -165,7 +166,7 @@ main %>%
 
 ```
 
-We repeat the same analysis using scores from Cardiff's roBERTa model in Figure 2. The roBERTa model classifies a much larger proportion of the tweets as neutral. In previous iterations of this analysis, it was difficult for us to remove all news related tweets. We found that this iteration was very effective at putting "inorganic" reactions from news organizations in this neutral category. Additionally, the roBERTa model classified less negativity for the Tubbs fire than the `syuzhet` package and we see a more consistent increase in negativity, plateauing at the Bay Area Fire and Dixie Fire.
+We repeat the same analysis using scores from Cardiff's roBERTa model in Figure 2. The roBERTa model classifies a much larger proportion of the tweets as neutral. In previous iterations of this analysis, it was difficult for us to remove all news related tweets. We found that this iteration was very effective at putting "inorganic" reactions from news organizations in this neutral category. Additionally, the roBERTa model classified less negativity for the Tubbs fire than the `syuzhet` package and we see a more consistent increase in negativity, plateauing at the Bay Area Fires and Dixie Fire.
 
 ### Effect of Location
 
