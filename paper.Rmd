@@ -15,9 +15,17 @@ library(sf)
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
+## Abstract
+
 ## Introduction
 
-One of North America's most noticeable symptoms of climate change has been a dramatic increase in the volume and intensity of wildfires, particularly in its western regions. August and September were previously defined by clear skies and fair weather, but fire and smoke have become a recurrent factor in this area. According to the National Interagency Fire Center (NIFC), more acreage burned nationally in each of the last seven years than any single year but one in the first ten years this data was collected (1983-1993, ex. 1988).^[See https://www.nifc.gov/fire-information/statistics/wildfires.] We sought to analyze if and how public sentiment has shifted over time with respect to these cataclysmic events, with the hopes of gaining some insight into public perceptions of climate change.
+One of North America's most noticeable symptoms of climate change has been a dramatic increase in the volume and intensity of wildfires, particularly in its western regions. August and September were previously defined by clear skies and fair weather, but fire and smoke have become a recurrent factor in this area. According to the National Interagency Fire Center (NIFC), more acreage burned nationally in each of the last seven years than any single year but one in the first ten years this data was collected (1983-1993, ex. 1988).^[See https://www.nifc.gov/fire-information/statistics/wildfires.] With more and more people affected by the increase in wildfire activity, it's reasonable to infer an increasing outcry of negativity towards this devastating symptom of climate change. However, it is hypothesized that the negative outcry may only come from people directly affected by the fire. An, "out of sight, out of mind", mentality may be prevalent in the United States, particularly around the affects of wildfires. We explored four recent US wildfires, that took place sequentially with the past 5 years, to analyze if and how public sentiment has shifted over time with respect to these cataclysmic events. Specifically, we sought to answer the following two questions. 
+
+* How has public sentiment towards wildfires changed in the past 5 years?
+
+* Is this change regionalized? Is public sentiment only shifted by those directly affected by these devastating events?
+
+We compared two different sentiment analysis algorithms in hopes of gaining some insight into public perceptions of climate change.
 
 ## Data
 
@@ -64,6 +72,8 @@ data.frame(
 
 ## Methods
 
+# Sentiment Analysis
+
 We used two sentiment analysis algorithms of varying complexity to classify the aforementioned tweets. The first algorithm we used was from the `syuzhet` package^[https://www.rdocumentation.org/packages/syuzhet/versions/1.0.6] in R. The syuzhet package returns sentiment scores on a spectrum of positively/negativity using a sentiment dictionary developed in the Nebraska Literacy Labs. We deemed any sentiment score that was greater than zero to be positive, less than zero, negative, and exactly equal to zero, neutral. Unfortunately, the `syuzhet` package wasn't designed or trained on short, declarative statements such as tweets.
 
 To overcome this issue, we decided to use Cardiff's roBERTa-base model for sentiment analysis.^[https://huggingface.co/cardiffnlp/twitter-roBERTa-sentiment-latest] This model was trained on roughly 124 million tweets from January 2018 to December 2021 and used the TweetEval benchmark for fine tuning the sentiment analysis. The algorithm outputs probabilities that a tweet is positive, neutral, or negative. For the purposes of our analysis, we simplified the output to a categorical variable representing the sentiment with the highest probability. (Strength of sentiment was not captured.)
@@ -72,11 +82,17 @@ BERT models are trained on both language modeling and next sentence prediction. 
 
 We found that most tweets from news organization contained neutral, non-opinionated information, which wasn’t useful for our research question. Therefore ,any tweet that came from a user with the word "meteorology" in their bio was not considered in our analysis. Additionally, in an attempt to filter out bots adding unnecessary noise to the data, we only used tweets from users with at least one follower, and the tweet itself needed at least one external interaction (a like/retweet/comment). This was done consistently before running both of the discussed sentiment algorithms. It's worth noting that the authors of Cardiff's roBERTa model (Loureriro et al., 2022) address the bot issue by filtering out the top 1% of users by volume, but we did not have a similarly unbiased data set to determine an appropriate posting cutoff.
 
+# Change through time
+
 To track to sentiment shift through time, we chronologically ordered the fires (Tubbs Fire, Camp Fire, Bay Area Fire, Dixie Fire) and calculated the proportion of each sentiment for each fire. We used proportions because of the unequal distribution of tweets across the fires. 
+
+# Effect of location
 
 We first converted from longitude/latitude coordinates to WGS84 coordinates, then projected these coordinates using a Lambert Conformal Conic projection (LCC). This process was completed using the `sf` package. [ADD MORE HERE]
 
 ## Results
+
+# Change through time
 
 In Figure 1, we plot the sentiment classification proportions for each of the four wildfires. The fires are in chronological order, beginning with Tubbs Fire and ending with the Dixie Fire. The error bars reflect a 95% confidence interval for each proportion.
 
@@ -158,6 +174,10 @@ main %>%
 
 The roBERTa model classifies a much larger proportion of the tweets as neutral. In previous iterations of this analysis, it was difficult for us to remove all news related tweets. We found that this iteration was very effective at putting "inorganic" reactions from news organizations in this neutral category. However, the roBERTa model classified less negativity for the Tubbs fire than the syuzhet package and we see a more consistent increase in negativity, plateauing at the Bay Area Fire and Dixie Fire. It was difficult for us to remove all news related tweets, roBERTa model
 
+# Effect of Location
+
+# Comparison of Sentiment Analysis Algorithm
+
 Let's examine differences in specific tweet classifation between the syuzhet and roBERTa model. Specifically, for the Tubbs fire where we saw less negativity classified by the roBERTa model. It was difficult for us to remove all news related tweets. roBERTa model classified a lot of these as neutral when the syuzhet package would incorrectly assig the tweet as slightly positive or slightly negative.
 
 **Examples of neutral for roBERTa and negative for syuzhet**
@@ -237,6 +257,8 @@ ggplot(data = raster_df) +
 ```
 
 ## Discussion
+
+[Add subheaders for each section]
 
 Even though the tweet volume was not consistent throughout time, Figure 1 gives us preliminary evidence that there may have been a shift in tweet sentiment towards wildfires in the last five years. Beginning with Camp Fire, the amount of negative tweets significantly increased for each wildfire.
 
